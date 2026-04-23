@@ -12,39 +12,31 @@
 
 ## 🧠 网络结构
 
-- **卷积部分**：三层双卷积结构（共6个卷积层），均使用 **3×3 卷积核**
-- **池化**：MaxPooling（2×2）
-- **全连接部分**：两层全连接，最终输出10个类别
+- **特征提取**：3 个卷积块，每个块包含两个 3×3 卷积层 + BatchNorm + ReLU
+- **通道变化**：32 → 64 → 128
+- **池化策略**：前两个卷积块后分别使用 2×2 MaxPool
+- **分类头**：AdaptiveAvgPool2d(8×8) + Flatten + Linear(8192→64) + ReLU + Dropout(0.5) + Linear(64→10)
 - **激活函数**：ReLU
-- **训练细节**：共训练50个epoch，保存验证集上最佳性能的模型权重
+- **训练策略**：50 轮训练并保存测试准确率最高时的模型权重
 
 在 CIFAR-10 测试集上的最佳分类准确率约为 **86%**。
 
-📊 网络结构总览
+### 📊 网络结构总览
 
-text
-输入 (3x32x32)
-    │
-    ▼
-[Conv2d(3→32,k3,p1)+BN+ReLU] → 32x32x32
-[Conv2d(32→32,k3,p1)+BN+ReLU] → 32x32x32
-[MaxPool2d(2x2)] → 32x16x16
-    │
-    ▼
-[Conv2d(32→64,k3,p1)+BN+ReLU] → 64x16x16
-[Conv2d(64→64,k3,p1)+BN+ReLU] → 64x16x16
-[MaxPool2d(2x2)] → 64x8x8
-    │
-    ▼
-[Conv2d(64→128,k3,p1)+BN+ReLU] → 128x8x8
-[Conv2d(128→128,k3,p1)+BN+ReLU] → 128x8x8
-[AdaptiveAvgPool2d(8x8)] → 128x8x8
-    │
-    ▼
-[Flatten] → 8192
-[Linear(8192→64)+ReLU] → 64
-[Dropout(0.5)]
-[Linear(64→10)] → 10 (输出分类任务)
+| 层级 | 模块 | 输出大小 |
+| --- | --- | --- |
+| 输入 | - | 3×32×32 |
+| Block 1 | Conv2d(3→32, k=3, p=1) + BN + ReLU<br>Conv2d(32→32, k=3, p=1) + BN + ReLU | 32×32×32 |
+| Pool 1 | MaxPool2d(2×2) | 32×16×16 |
+| Block 2 | Conv2d(32→64, k=3, p=1) + BN + ReLU<br>Conv2d(64→64, k=3, p=1) + BN + ReLU | 64×16×16 |
+| Pool 2 | MaxPool2d(2×2) | 64×8×8 |
+| Block 3 | Conv2d(64→128, k=3, p=1) + BN + ReLU<br>Conv2d(128→128, k=3, p=1) + BN + ReLU | 128×8×8 |
+| Pool 3 | AdaptiveAvgPool2d(8×8) | 128×8×8 |
+| Flatten | Flatten | 8192 |
+| FC1 | Linear(8192→64) + ReLU | 64 |
+| Dropout | Dropout(0.5) | 64 |
+| 输出 | Linear(64→10) | 10 |
+
 ---
 
 ## 📁 项目文件说明
@@ -69,13 +61,16 @@ text
 
 ```bash
 pip install torch torchvision gradio pillow
-
+```
 
 ## 🚀 使用指南
 
 1️⃣ 运行网页预测程序
-bash
+
+```bash
 python test_byusingmodel.py
+```
+
 启动后 Gradio 服务将在本地运行：
 
 地址：http://127.0.0.1:7860
@@ -94,9 +89,9 @@ python test_byusingmodel.py
 注意：训练脚本 cifar10_CNN.py 中的数据集路径已设为占位符 "你的地址"，请先将其替换为本机 CIFAR-10 数据集的根目录路径。
 同时可自行调整其中关于迭代训练过程中的参数
 
-
-bash
+```bash
 python cifar10_CNN.py
+```
 
 训练过程中会在验证集上评估性能，并保存最佳模型为 cifar10_best_model.pth
 
